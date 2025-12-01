@@ -24,30 +24,27 @@ pub fn main () !void {
     while(input.interface.takeByte()) |ch| {
         if (try input.interface.takeDelimiter('\n')) |str| {
             var n = try std.fmt.parseInt(u32, str, 10);
-            answer += n / 100;
-            n %= 100;
+            var clicked_zero: u32 = 0;
+            clicked_zero += n / 100;
+            n %= 100; // 0 <= n <= 99
             if (ch == 'R') {
                 dial += n;
                 if (dial > 99) {
-                    answer += 1;
+                    clicked_zero += 1;
                     dial %= 100;
                 }
             } else if (ch == 'L') {
-                if (dial == 0) {
-                    dial = 100 - n;
-                } else if (n > dial) {
-                    answer += 1;
-                    dial = 100 - (n - dial);
-                } else {
-                    dial -= n;
+                while (n > dial) {
+                    clicked_zero += if (dial == 0) 0 else 1;
+                    n -= dial;
+                    dial = 100;
                 }
-
-                if (dial == 0) {
-                    answer += 1;
-                }
+                dial -= n;
+                clicked_zero += if (dial == 0) 1 else 0;
             } else {
                 std.process.fatal("Invalid rotation instruction {c}\n", .{ ch });
             }
+            answer += clicked_zero;
             std.debug.print("Rotate {c} by {d}, dial points at {d}, zeros: {d}\n", .{ ch, n, dial, answer });
         }
     } else |_| {
