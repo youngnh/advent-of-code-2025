@@ -28,16 +28,16 @@ pub fn main () !void {
         while (buf[i] != '-') {
             i += 1;
         }
-        const numstr_a = buf[start..i];
-        std.debug.print("Found A: '{s}'\n", .{ numstr_a });
+        const a = try std.fmt.parseInt(u64, buf[start..i], 10);
+        std.debug.print("Found A: {d}\n", .{ a });
 
         i += 1; // advance past -
         j = i;
         while (buf[j] >= '0' and buf[j] <= '9') {
             j += 1;
         }
-        const numstr_b = buf[i..j];
-        std.debug.print("Found B: '{s}'\n\n", .{ numstr_b} );
+        const b = try std.fmt.parseInt(u64, buf[i..j], 10);
+        std.debug.print("Found B: {d}\n\n", .{ b } );
 
         i = j + 1; // advance past ,
     }
