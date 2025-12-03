@@ -31,47 +31,43 @@ pub fn main () !void {
     const infile = try std.fs.cwd().openFile(argv[1], .{ .mode = .read_only });
     defer infile.close();
 
-    const buf = try allocator.alloc(u8, 1024);
-    var infile_reader = infile.reader(buf);
+    var infile_reader = infile.reader(try allocator.alloc(u8, 1024));
     var input = &infile_reader.interface;
 
+    try input.fillMore();
+    const buf = input.buffered();
+
+    var i: usize = 0;
+    var j: usize = 0;
     var answer: u64 = 0;
     const print_buf = try allocator.alloc(u8, 1024);
 
-    while (input.takeDelimiter('-')) |num_str_opt| {
-        if (num_str_opt) |num_str_a| {
-            std.debug.print("Parsing a: {s}\n", .{ num_str_a });
-            var a = try std.fmt.parseInt(u64, num_str_a, 10);
-
-            if (input.takeDelimiter(',')) |num_str_opt2| {
-                if (num_str_opt2) |num_str_b| {
-                    var b: u64 = undefined;
-                    const end = num_str_b.len - 1;
-                    if (num_str_b[end] == '\n') {
-                        std.debug.print("Trailing newline\n", .{});
-                        std.debug.print("Parsing b: {s}$\n", .{ num_str_b[0..end] });
-                        b = try std.fmt.parseInt(u64, num_str_b[0..end], 10);
-                    } else {
-                        std.debug.print("Parsing b: {s}$\n", .{ num_str_b });
-                        b = try std.fmt.parseInt(u64, num_str_b, 10);
-                    }
-
-                    while (a <= b) {
-                        std.debug.print("Testing: {d}\n", .{ a });
-                        const idstr = try std.fmt.bufPrint(print_buf, "{d}", .{ a });
-                        if (invalid_id(idstr)) {
-                            answer += a;
-                        }
-                        a += 1;
-                    }
-                }
-            } else |_| {
-                // end of input
-            }
-            std.debug.print("Next iteration of loop {d}\n", .{ answer });
+    while (i < buf.len) {
+        const start = i;
+        while (buf[i] != '-') {
+            i += 1;
         }
-    } else |_| {
-        // end of input
+        var a = try std.fmt.parseInt(u64, buf[start..i], 10);
+        std.debug.print("Found A: {d}\n", .{ a });
+
+        i += 1; // advance past -
+        j = i;
+        while (buf[j] >= '0' and buf[j] <= '9') {
+            j += 1;
+        }
+        const b = try std.fmt.parseInt(u64, buf[i..j], 10);
+        std.debug.print("Found B: {d}\n\n", .{ b } );
+
+        while (a <= b) {
+            const idstr = try std.fmt.bufPrint(print_buf, "{d}", .{ a });
+            if (invalid_id(idstr)) {
+                answer += a;
+            }
+            a += 1;
+        }
+
+        // next iteration
+        i = j + 1; // advance past ,
     }
 
     var stdout_buf: [1024]u8 = undefined;
