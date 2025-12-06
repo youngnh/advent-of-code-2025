@@ -9,7 +9,7 @@ pub fn main() !void {
     const argv = try std.process.argsAlloc(allocator);
 
     if (argv.len < 2) {
-      std.process.fatal("Expected input argument, but none given", .{});
+        std.process.fatal("Expected input argument, but none given", .{});
     }
 
     const infile = try std.fs.cwd().openFile(argv[1], .{ .mode = .read_only });
@@ -35,46 +35,53 @@ pub fn main() !void {
     }
 
     var answer: u64 = 0;
-    const offset = width * (height - 1);
     var c: usize = 0;
-    while (c + offset < buf.len) {
-        std.debug.print("C={d} op={c}\n", .{ c, buf[c + offset] });
-        var w: usize = c + 1;
-        while (w + offset < buf.len and buf[w + offset] == ' ') {
-            w += 1;
-        }
-        w = w - c;
-        std.debug.print("w: {d}\n", .{ w });
-        var r: usize = 0;
+    while (c < width - 1) {
         var col_total: u64 = undefined;
-        if (buf[c + offset] == '*') {
+        const op = buf[width * (height - 1) + c];
+        if (op == '*') {
             col_total = 1;
-        } else if (buf[c + offset] == '+') {
+        } else if (op == '+') {
             col_total = 0;
-        } else if (buf[c + offset] == '\n') {
-            break;
         } else {
-            std.process.fatal("Unknown operator {c}\n", .{ buf[c + offset] });
+            std.process.fatal("Unknown operator {c}\n", .{ op });
         }
+
+        var r: usize = 0;
         while (r < height - 1) {
-            const a = width * r + c;
-            const b = a + w;
-            const numstr = std.mem.trim(u8, buf[a..b], " \n");
-            std.debug.print("Parsing '{s}'\n", .{ numstr });
-            const n = try std.fmt.parseInt(u32, numstr, 10);
-            if (buf[c + offset] == '*') {
+            const n = try readColNum(c, r, width, buf);
+            if (op == '*') {
                 col_total *= n;
-            } else if (buf[c + offset] == '+') {
-                col_total += n;
             } else {
-                std.process.fatal("Unknown operator {c}\n", .{ buf[c + offset] });
+                col_total += n;
             }
             r += 1;
         }
         std.debug.print("Col total {d}\n", .{ col_total });
         answer += col_total;
-        c += w;
+
+        // move to next op
+        c += 1;
+        while (buf[width * (height - 1) + c] == ' ') {
+            c += 1;
+        }
     }
 
     std.debug.print("Answer: {d}\n", .{ answer });
+}
+
+pub fn readColNum(c: usize, r: usize, width: u32, buf: []u8) !u64 {
+    var s: usize = width * r + c;
+    // skip leading whitespace
+    while (buf[s] == ' ') {
+        s += 1;
+    }
+    var x: usize = s;
+    // read until trailing whitespace
+    while (buf[x] != ' ' and buf[x] != '\n') {
+        x += 1;
+    }
+    // parse slice
+    std.debug.print("Parsing '{s}'\n", .{ buf[s..x] });
+    return std.fmt.parseInt(u64, buf[s..x], 10);
 }
