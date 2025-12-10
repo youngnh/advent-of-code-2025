@@ -2,9 +2,9 @@ const std = @import("std");
 const Reader = std.io.Reader;
 
 const Point = struct {
-    x: i32,
-    y: i32,
-    z: i32,
+    x: i64,
+    y: i64,
+    z: i64,
 
     circuit: u32 = 0,
 
@@ -66,7 +66,7 @@ pub fn main() !void {
     const num_circuits: u32 = try std.fmt.parseInt(u32, argv[2], 10);
 
     var i: usize = 0;
-    var points: [256]Point = undefined;
+    var points: [1024]Point = undefined;
     while (input.peekByte()) |_| {
         points[i] = try readPoint(input);
         i += 1;
@@ -76,14 +76,14 @@ pub fn main() !void {
     std.debug.print("Read {d} points\n", .{ i });
 
     var next_circuit: u32 = 1;
-    var counts_arr = [_]u32{0} ** 128;
+    var counts_arr = [_]u32{0} ** 1024;
     var min_dist: f32 = undefined;
-    for (0..num_circuits) |_| {
+    for (0..num_circuits) |n| {
         if(closest_pair(points[0..i], &min_dist)) |idxs| {
             var p = &points[idxs[0]];
             var q = &points[idxs[1]];
             const d = p.dist(q.*);
-            std.debug.print("Closest points: {d},{d},{d} and {d},{d},{d} at dist {d}\n", .{ p.x, p.y, p.z, q.x, q.y, q.z, d });
+            std.debug.print("{d}: Closest points: {d},{d},{d} and {d},{d},{d} at dist {d}\n", .{ n, p.x, p.y, p.z, q.x, q.y, q.z, d });
 
             if (p.circuit == 0 and q.circuit == 0) {
                 std.debug.print("Placing {d},{d},{d} and {d},{d},{d} on their own circuit {d}\n", .{ p.x, p.y, p.z, q.x, q.y, q.z, next_circuit });
@@ -114,10 +114,6 @@ pub fn main() !void {
                 }
             }
 
-            for(counts_arr[1..next_circuit]) |c| {
-                std.debug.print("{d} ", .{ c });
-            }
-            std.debug.print("\n", .{});
             std.debug.print("\n", .{});
         }
     }
@@ -138,13 +134,13 @@ pub fn main() !void {
 
 pub fn readPoint(input: *Reader) !Point {
     var num_str = try input.takeDelimiterInclusive(',');
-    const x = try std.fmt.parseInt(i32, num_str[0..num_str.len - 1], 10);
+    const x = try std.fmt.parseInt(i64, num_str[0..num_str.len - 1], 10);
 
     num_str = try input.takeDelimiterInclusive(',');
-    const y = try std.fmt.parseInt(i32, num_str[0..num_str.len - 1], 10);
+    const y = try std.fmt.parseInt(i64, num_str[0..num_str.len - 1], 10);
 
     num_str = try input.takeDelimiterInclusive('\n');
-    const z = try std.fmt.parseInt(i32, num_str[0..num_str.len - 1], 10);
+    const z = try std.fmt.parseInt(i64, num_str[0..num_str.len - 1], 10);
 
     return Point{ .x = x, .y = y, .z = z };
 }
