@@ -75,29 +75,49 @@ pub fn main() !void {
 
     var next_circuit: u32 = 1;
     var counts_arr = [_]u32{0} ** 128;
-    while(closest_pair(points[0..i])) |idxs| {
-        var p = &points[idxs[0]];
-        var q = &points[idxs[1]];
-        const d = p.dist(q.*);
-        std.debug.print("Closest points: {d},{d},{d} and {d},{d},{d} at dist {d}\n", .{ p.x, p.y, p.z, q.x, q.y, q.z, d });
+    var min_dist: f32 = undefined;
+    for (0..10) |_| {
+        if(closest_pair(points[0..i], &min_dist)) |idxs| {
+            var p = &points[idxs[0]];
+            var q = &points[idxs[1]];
+            const d = p.dist(q.*);
+            std.debug.print("Closest points: {d},{d},{d} and {d},{d},{d} at dist {d}\n", .{ p.x, p.y, p.z, q.x, q.y, q.z, d });
 
-        if (p.circuit == 0 and q.circuit == 0) {
-            std.debug.print("Placing {d},{d},{d} and {d},{d},{d} on their own circuit {d}\n", .{ p.x, p.y, p.z, q.x, q.y, q.z, next_circuit });
-            p.circuit = next_circuit;
-            q.circuit = next_circuit;
-            counts_arr[next_circuit] += 2;
-            next_circuit += 1;
-        } else if (p.circuit != 0) {
-            std.debug.print("Adding {d},{d},{d} to circuit {d}\n", .{ q.x, q.y, q.z, p.circuit });
-            q.circuit = p.circuit;
-            counts_arr[q.circuit] += 1;
-        } else if (q.circuit != 0) {
-            std.debug.print("Adding {d},{d},{d} to circuit {d}\n", .{ p.x, p.y, p.z, q.circuit });
-            p.circuit = q.circuit;
-            counts_arr[p.circuit] += 1;
+            if (p.circuit == 0 and q.circuit == 0) {
+                std.debug.print("Placing {d},{d},{d} and {d},{d},{d} on their own circuit {d}\n", .{ p.x, p.y, p.z, q.x, q.y, q.z, next_circuit });
+                p.circuit = next_circuit;
+                q.circuit = next_circuit;
+                counts_arr[next_circuit] += 2;
+                next_circuit += 1;
+            } else if (p.circuit == q.circuit) {
+                std.debug.print("Both already connected\n", .{});
+            } else if (q.circuit == 0) {
+                std.debug.print("Adding {d},{d},{d} to circuit {d}\n", .{ q.x, q.y, q.z, p.circuit });
+                q.circuit = p.circuit;
+                counts_arr[q.circuit] += 1;
+            } else if (p.circuit == 0) {
+                std.debug.print("Adding {d},{d},{d} to circuit {d}\n", .{ p.x, p.y, p.z, q.circuit });
+                p.circuit = q.circuit;
+                counts_arr[p.circuit] += 1;
+            } else {
+                // add all boxes in q's circuit to p's circuit
+                std.debug.print("Combining circuit {d} with circuit {d}\n", .{ p.circuit, q.circuit });
+                counts_arr[p.circuit] += counts_arr[q.circuit];
+                counts_arr[q.circuit] = 0;
+                for (points[0..i]) |*x| {
+                    if (x.circuit == q.circuit) {
+                        std.debug.print("Adding {d},{d},{d} to circuit {d}\n", .{ x.x, x.y, x.z, p.circuit });
+                        x.circuit = p.circuit;
+                    }
+                }
+            }
+
+            for(counts_arr[1..next_circuit]) |c| {
+                std.debug.print("{d} ", .{ c });
+            }
+            std.debug.print("\n", .{});
+            std.debug.print("\n", .{});
         }
-
-        std.debug.print("\n", .{});
     }
 
     const counts = counts_arr[1..next_circuit];
@@ -106,6 +126,12 @@ pub fn main() !void {
         std.debug.print("{d} ", .{ c });
     }
     std.debug.print("\n", .{});
+
+    var answer: u32 = 1;
+    for (counts[0..3]) |c| {
+        answer *= c;
+    }
+    std.debug.print("Answer: {d}\n", .{ answer });
 }
 
 pub fn readPoint(input: *Reader) !Point {
@@ -122,20 +148,22 @@ pub fn readPoint(input: *Reader) !Point {
 }
 
 // returns the indexes of the two closest points
-pub fn closest_pair(points: []Point) ?[2]usize {
+pub fn closest_pair(points: []Point, floor: *f32) ?[2]usize {
     var result: [2]usize = undefined;
     var min_dist: f32 = std.math.floatMax(f32);
     for (0..points.len) |p| {
         for (p + 1..points.len) |q| {
-            if (points[p].circuit == 0 or points[q].circuit == 0) {
-                const d = points[p].dist(points[q]);
-                if (d < min_dist) {
-                    result[0] = p;
-                    result[1] = q;
-                    min_dist = d;
-                }
+            const d = points[p].dist(points[q]);
+            if (d > floor.* and d < min_dist) {
+                result[0] = p;
+                result[1] = q;
+                min_dist = d;
             }
         }
     }
-    return if (min_dist < std.math.floatMax(f32)) result else null;
+    if (min_dist < std.math.floatMax(f32)) {
+        floor.* = min_dist;
+        return result;
+    }
+    return null;
 }
