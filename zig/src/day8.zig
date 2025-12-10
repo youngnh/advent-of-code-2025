@@ -6,6 +6,8 @@ const Point = struct {
     y: i32,
     z: i32,
 
+    circuit: u32 = 0,
+
     pub fn dist(self: Point, other: Point) f32 {
         const dx = other.x - self.x;
         const x2 = dx * dx;
@@ -27,9 +29,18 @@ const Point = struct {
         const z2 = dz * dz;
 
         switch (dim) {
-            1 => return dx,
-            2 => return std.math.sqrt(x2 + y2),
-            else => return std.math.sqrt(x2 + y2 + z2),
+            1 => {
+                const result: f32 = @floatFromInt(dx);
+                return result;
+            },
+            2 => {
+                const sum: f32 = @floatFromInt(x2 + y2);
+                return std.math.sqrt(sum);
+            },
+            else => {
+                const sum: f32 = @floatFromInt(x2 + y2 + z2);
+                return std.math.sqrt(sum);
+            },
         }
     }
 };
@@ -61,40 +72,70 @@ pub fn main() !void {
         // end of input
     }
     std.debug.print("Read {d} points\n", .{ i });
-    const idxs = closest_pair(points[0..i]);
-    const p = points[idxs[0]];
-    const q = points[idxs[1]];
-    const d = p.dist(q);
-    std.debug.print("Closest points: {d},{d},{d} and {d},{d},{d} at dist {d}\n", .{ p.x, p.y, p.z, q.x, q.y, q.z, d });
+
+    var next_circuit: u32 = 1;
+    var counts_arr = [_]u32{0} ** 128;
+    while(closest_pair(points[0..i])) |idxs| {
+        var p = &points[idxs[0]];
+        var q = &points[idxs[1]];
+        const d = p.dist(q.*);
+        std.debug.print("Closest points: {d},{d},{d} and {d},{d},{d} at dist {d}\n", .{ p.x, p.y, p.z, q.x, q.y, q.z, d });
+
+        if (p.circuit == 0 and q.circuit == 0) {
+            std.debug.print("Placing {d},{d},{d} and {d},{d},{d} on their own circuit {d}\n", .{ p.x, p.y, p.z, q.x, q.y, q.z, next_circuit });
+            p.circuit = next_circuit;
+            q.circuit = next_circuit;
+            counts_arr[next_circuit] += 2;
+            next_circuit += 1;
+        } else if (p.circuit != 0) {
+            std.debug.print("Adding {d},{d},{d} to circuit {d}\n", .{ q.x, q.y, q.z, p.circuit });
+            q.circuit = p.circuit;
+            counts_arr[q.circuit] += 1;
+        } else if (q.circuit != 0) {
+            std.debug.print("Adding {d},{d},{d} to circuit {d}\n", .{ p.x, p.y, p.z, q.circuit });
+            p.circuit = q.circuit;
+            counts_arr[p.circuit] += 1;
+        }
+
+        std.debug.print("\n", .{});
+    }
+
+    const counts = counts_arr[1..next_circuit];
+    std.mem.sort(u32, counts, {}, std.sort.desc(u32));
+    for(counts) |c| {
+        std.debug.print("{d} ", .{ c });
+    }
+    std.debug.print("\n", .{});
 }
 
 pub fn readPoint(input: *Reader) !Point {
-    var p: Point = undefined;
     var num_str = try input.takeDelimiterInclusive(',');
-    p.x = try std.fmt.parseInt(i32, num_str[0..num_str.len - 1], 10);
+    const x = try std.fmt.parseInt(i32, num_str[0..num_str.len - 1], 10);
 
     num_str = try input.takeDelimiterInclusive(',');
-    p.y = try std.fmt.parseInt(i32, num_str[0..num_str.len - 1], 10);
+    const y = try std.fmt.parseInt(i32, num_str[0..num_str.len - 1], 10);
 
     num_str = try input.takeDelimiterInclusive('\n');
-    p.z = try std.fmt.parseInt(i32, num_str[0..num_str.len - 1], 10);
+    const z = try std.fmt.parseInt(i32, num_str[0..num_str.len - 1], 10);
 
-    return p;
+    return Point{ .x = x, .y = y, .z = z };
 }
 
 // returns the indexes of the two closest points
-pub fn closest_pair(points: []Point) [2]usize {
+pub fn closest_pair(points: []Point) ?[2]usize {
     var result: [2]usize = undefined;
     var min_dist: f32 = std.math.floatMax(f32);
     for (0..points.len) |p| {
         for (p + 1..points.len) |q| {
-            const d = points[p].dist(points[q]);
-            if (d < min_dist) {
-                result[0] = p;
-                result[1] = q;
-                min_dist = d;
+            if (points[p].circuit == 0 or points[q].circuit == 0) {
+                const d = points[p].dist(points[q]);
+                if (d < min_dist) {
+                    result[0] = p;
+                    result[1] = q;
+                    min_dist = d;
+                }
             }
         }
     }
-    return result;
+    return if (min_dist < std.math.floatMax(f32)) result else null;
 }
