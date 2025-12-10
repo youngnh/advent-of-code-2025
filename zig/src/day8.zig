@@ -84,6 +84,7 @@ pub fn main() !void {
             var q = &points[idxs[1]];
             const d = p.dist(q.*);
             std.debug.print("{d}: Closest points: {d},{d},{d} and {d},{d},{d} at dist {d}\n", .{ n, p.x, p.y, p.z, q.x, q.y, q.z, d });
+            std.debug.print("Circuit {d} ({d}), {d} ({d})\n", .{ p.circuit, counts_arr[p.circuit], q.circuit, counts_arr[q.circuit] });
 
             if (p.circuit == 0 and q.circuit == 0) {
                 std.debug.print("Placing {d},{d},{d} and {d},{d},{d} on their own circuit {d}\n", .{ p.x, p.y, p.z, q.x, q.y, q.z, next_circuit });
@@ -106,14 +107,16 @@ pub fn main() !void {
                 std.debug.print("Combining circuit {d} with circuit {d}\n", .{ p.circuit, q.circuit });
                 counts_arr[p.circuit] += counts_arr[q.circuit];
                 counts_arr[q.circuit] = 0;
+                const qc = q.circuit;
                 for (points[0..i]) |*x| {
-                    if (x.circuit == q.circuit) {
+                    if (x.circuit == qc) {
                         std.debug.print("Adding {d},{d},{d} to circuit {d}\n", .{ x.x, x.y, x.z, p.circuit });
                         x.circuit = p.circuit;
                     }
                 }
             }
 
+            std.debug.print("Circuit {d} ({d}), {d} ({d})\n", .{ p.circuit, counts_arr[p.circuit], q.circuit, counts_arr[q.circuit] });
             std.debug.print("\n", .{});
         }
     }
