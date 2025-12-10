@@ -53,8 +53,8 @@ pub fn main() !void {
 
     const argv = try std.process.argsAlloc(allocator);
 
-    if (argv.len < 2) {
-        std.process.fatal("Expected input argument, but none given\n", .{});
+    if (argv.len < 3) {
+        std.process.fatal("Expected input and num_circuits argument, but none given\n", .{});
     }
 
     const infile = try std.fs.cwd().openFile(argv[1], .{ .mode = .read_only });
@@ -62,6 +62,8 @@ pub fn main() !void {
 
     var infile_reader = infile.reader(try allocator.alloc(u8, 20 * 1024));
     const input = &infile_reader.interface;
+
+    const num_circuits: u32 = try std.fmt.parseInt(u32, argv[2], 10);
 
     var i: usize = 0;
     var points: [256]Point = undefined;
@@ -76,7 +78,7 @@ pub fn main() !void {
     var next_circuit: u32 = 1;
     var counts_arr = [_]u32{0} ** 128;
     var min_dist: f32 = undefined;
-    for (0..10) |_| {
+    for (0..num_circuits) |_| {
         if(closest_pair(points[0..i], &min_dist)) |idxs| {
             var p = &points[idxs[0]];
             var q = &points[idxs[1]];
