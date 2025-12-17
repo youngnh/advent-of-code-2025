@@ -32,12 +32,25 @@ pub fn main() !void {
 
     for (points[0..points.len - 1]) |p| {
         for (points[1..points.len]) |q| {
-            std.debug.print("{d},{d} Interior? {}\n", .{ p.x, p.y, p.interior(points) });
             const a: Point = .{ .x = q.x, .y = p.y };
-            std.debug.print("{d},{d} Interior? {}\n", .{ a.x, a.y, a.interior(points) });
-            std.debug.print("{d},{d} Interior? {}\n", .{ q.x, q.y, q.interior(points) });
             const b: Point = .{ .x = p.x, .y = q.y };
-            std.debug.print("{d},{d} Interior? {}\n\n", .{ b.x, b.y, b.interior(points) });
+            if (intersects(p, a, points)) |seg| {
+                std.debug.print("{d},{d} to {d},{d} crosses segment {d},{d} to {d},{d}\n\n", .{ p.x, p.y, a.x, a.y, seg[0].x, seg[0].y, seg[1].x, seg[1].y });
+                continue;
+            }
+            if (intersects(a, q, points)) |seg| {
+                std.debug.print("{d},{d} to {d},{d} crosses segment {d},{d} to {d},{d}\n\n", .{ a.x, a.y, q.x, q.y, seg[0].x, seg[0].y, seg[1].x, seg[1].y });
+                continue;
+            }
+            if (intersects(q, b, points)) |seg| {
+                std.debug.print("{d},{d} to {d},{d} crosses segment {d},{d} to {d},{d}\n\n", .{ q.x, q.y, b.x, b.y, seg[0].x, seg[0].y, seg[1].x, seg[1].y });
+                continue;
+            }
+            if (intersects(b, p, points)) |seg| {
+                std.debug.print("{d},{d} to {d},{d} crosses segment {d},{d} to {d},{d}\n\n", .{ b.x, b.y, p.x, p.y, seg[0].x, seg[0].y, seg[1].x, seg[1].y });
+                continue;
+            }
+            std.debug.print("Corners: {d},{d} and {d},{d} no intersections\n\n", .{ p.x, p.y, q.x, q.y });
         }
     }
 }
@@ -84,6 +97,41 @@ const Point = struct {
         return count % 2 == 1;
     }
 };
+
+pub fn intersects(p: Point, q: Point, polygon: []Point) ?[2]Point {
+    var s1 = polygon[0];
+    var s2: Point = undefined;
+    var i: usize = 1;
+    while (i <= polygon.len) {
+        s2 = polygon[i % polygon.len];
+
+        // horizontal pq intersects vertical segment
+        if (p.y == q.y) {
+            if (s1.x == s2.x) {
+                if (@min(s1.y, s2.y) < p.y and p.y < @max(s1.y, s2.y)) {
+                    if (@min(p.x, q.x) < s1.x and s1.x < @max(p.x, q.x)) {
+                        return .{ s1, s2 };
+                    }
+                }
+            }
+        }
+
+        // vertical pq intersects horizontal segment
+        if (p.x == q.x) {
+            if (s1.y == s2.y) {
+                if (@min(s1.x, s2.x) < p.x and p.x < @max(s1.x, s2.x)) {
+                    if (@min(p.y, q.y) < s1.y and s1.y < @max(p.y, q.y)) {
+                        return .{ s1, s2 };
+                    }
+                }
+            }
+        }
+
+        s1 = s2;
+        i += 1;
+    }
+    return null;
+}
 
 pub fn readPoint(input: *Reader) !Point {
     var num_str = try input.takeDelimiterInclusive(',');
