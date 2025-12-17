@@ -30,10 +30,22 @@ pub fn main() !void {
     const points: []Point = points_arr[0..i];
     std.debug.print("Read {d} points\n", .{ points.len });
 
+    var max_area: u64 = 0;
+    var final_p: Point = undefined;
+    var final_q: Point = undefined;
     for (points[0..points.len - 1]) |p| {
         for (points[1..points.len]) |q| {
             const a: Point = .{ .x = q.x, .y = p.y };
+            if (!a.interior(points)) {
+                std.debug.print("{d},{d} is not interior\n\n", .{ a.x, a.y });
+                continue;
+            }
             const b: Point = .{ .x = p.x, .y = q.y };
+            if (!b.interior(points)) {
+                std.debug.print("{d},{d} is not interior\n\n", .{ b.x, b.y });
+                continue;
+            }
+
             if (intersects(p, a, points)) |seg| {
                 std.debug.print("{d},{d} to {d},{d} crosses segment {d},{d} to {d},{d}\n\n", .{ p.x, p.y, a.x, a.y, seg[0].x, seg[0].y, seg[1].x, seg[1].y });
                 continue;
@@ -50,9 +62,18 @@ pub fn main() !void {
                 std.debug.print("{d},{d} to {d},{d} crosses segment {d},{d} to {d},{d}\n\n", .{ b.x, b.y, p.x, p.y, seg[0].x, seg[0].y, seg[1].x, seg[1].y });
                 continue;
             }
-            std.debug.print("Corners: {d},{d} and {d},{d} no intersections\n\n", .{ p.x, p.y, q.x, q.y });
+            const area = area_of(p, q);
+            std.debug.print("Corners: {d},{d} and {d},{d} no intersections, area={d}\n\n", .{ p.x, p.y, q.x, q.y, area });
+            if (area > max_area) {
+                max_area = area;
+                final_p = p;
+                final_q = q;
+            }
         }
     }
+
+    std.debug.print("Final corners {d},{d} {d},{d}\n", .{ final_p.x, final_p.y, final_q.x, final_q.y });
+    std.debug.print("Answer: {d}\n", .{ max_area });
 }
 
 const Point = struct {
@@ -141,4 +162,8 @@ pub fn readPoint(input: *Reader) !Point {
     const y = try std.fmt.parseInt(i64, num_str[0..num_str.len - 1], 10);
 
     return Point{ .x = x, .y = y };
+}
+
+pub fn area_of(p: Point, q: Point) u64 {
+    return @abs(p.x - q.x + 1) * @abs(p.y - q.y + 1);
 }
