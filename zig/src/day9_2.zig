@@ -33,33 +33,43 @@ pub fn main() !void {
     var max_area: u64 = 0;
     var final_p: Point = undefined;
     var final_q: Point = undefined;
-    for (points[0..points.len - 1]) |p| {
-        for (points[1..points.len]) |q| {
+    var pairs_count: u32 = 0;
+    var pi: usize = 0;
+    var p: Point = undefined;
+    var qi: usize = undefined;
+    var q: Point = undefined;
+    while (pi < points.len - 1) {
+        p = points[pi];
+        qi = pi + 1;
+        while (qi < points.len) {
+            q = points[qi];
+            qi += 1;
+            pairs_count += 1;
             const a: Point = .{ .x = q.x, .y = p.y };
             if (!a.interior(points)) {
-                std.debug.print("{d},{d} is not interior\n\n", .{ a.x, a.y });
+                // std.debug.print("{d},{d} is not interior\n\n", .{ a.x, a.y });
                 continue;
             }
             const b: Point = .{ .x = p.x, .y = q.y };
             if (!b.interior(points)) {
-                std.debug.print("{d},{d} is not interior\n\n", .{ b.x, b.y });
+                // std.debug.print("{d},{d} is not interior\n\n", .{ b.x, b.y });
                 continue;
             }
 
-            if (intersects(p, a, points)) |seg| {
-                std.debug.print("{d},{d} to {d},{d} crosses segment {d},{d} to {d},{d}\n\n", .{ p.x, p.y, a.x, a.y, seg[0].x, seg[0].y, seg[1].x, seg[1].y });
+            if (intersects(p, a, points)) |_| {
+                // std.debug.print("{d},{d} to {d},{d} crosses segment {d},{d} to {d},{d}\n\n", .{ p.x, p.y, a.x, a.y, seg[0].x, seg[0].y, seg[1].x, seg[1].y });
                 continue;
             }
-            if (intersects(a, q, points)) |seg| {
-                std.debug.print("{d},{d} to {d},{d} crosses segment {d},{d} to {d},{d}\n\n", .{ a.x, a.y, q.x, q.y, seg[0].x, seg[0].y, seg[1].x, seg[1].y });
+            if (intersects(a, q, points)) |_| {
+                // std.debug.print("{d},{d} to {d},{d} crosses segment {d},{d} to {d},{d}\n\n", .{ a.x, a.y, q.x, q.y, seg[0].x, seg[0].y, seg[1].x, seg[1].y });
                 continue;
             }
-            if (intersects(q, b, points)) |seg| {
-                std.debug.print("{d},{d} to {d},{d} crosses segment {d},{d} to {d},{d}\n\n", .{ q.x, q.y, b.x, b.y, seg[0].x, seg[0].y, seg[1].x, seg[1].y });
+            if (intersects(q, b, points)) |_| {
+                // std.debug.print("{d},{d} to {d},{d} crosses segment {d},{d} to {d},{d}\n\n", .{ q.x, q.y, b.x, b.y, seg[0].x, seg[0].y, seg[1].x, seg[1].y });
                 continue;
             }
-            if (intersects(b, p, points)) |seg| {
-                std.debug.print("{d},{d} to {d},{d} crosses segment {d},{d} to {d},{d}\n\n", .{ b.x, b.y, p.x, p.y, seg[0].x, seg[0].y, seg[1].x, seg[1].y });
+            if (intersects(b, p, points)) |_| {
+                // std.debug.print("{d},{d} to {d},{d} crosses segment {d},{d} to {d},{d}\n\n", .{ b.x, b.y, p.x, p.y, seg[0].x, seg[0].y, seg[1].x, seg[1].y });
                 continue;
             }
             const area = area_of(p, q);
@@ -70,8 +80,10 @@ pub fn main() !void {
                 final_q = q;
             }
         }
+        pi += 1;
     }
 
+    std.debug.print("Considered {d} pairs\n", .{ pairs_count });
     std.debug.print("Final corners {d},{d} {d},{d}\n", .{ final_p.x, final_p.y, final_q.x, final_q.y });
     std.debug.print("Answer: {d}\n", .{ max_area });
 }
